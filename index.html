@@ -1,0 +1,1177 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI 에이전트의 이해 — Lecture 01</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&display=swap">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css">
+  <style>
+    /* ========================================
+       RESET
+    ======================================== */
+    *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #fef7f0;
+      font-family: 'Pretendard Variable', 'Pretendard', -apple-system, BlinkMacSystemFont, system-ui, Roboto, 'Helvetica Neue', 'Segoe UI', 'Apple SD Gothic Neo', 'Noto Sans KR', 'Malgun Gothic', 'Apple Color Emoji', 'Segoe UI Emoji', 'Segoe UI Symbol', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+    }
+
+    /* ========================================
+       CSS VARIABLES
+    ======================================== */
+    :root {
+      --bg: #fef7f0;
+      --surface: #ffffff;
+      --text-primary: #2d2d2d;
+      --text-secondary: #777777;
+      --accent-coral: #ff6b6b;
+      --accent-mint: #51cf66;
+      --accent-sky: #74c0fc;
+      --accent-lavender: #cc5de8;
+      --accent-yellow: #ffd43b;
+      --border: #f0e0d0;
+      --radius-sm: 12px;
+      --radius-md: 16px;
+      --radius-lg: 20px;
+      --radius-xl: 28px;
+      --font-code: 'JetBrains Mono', monospace;
+    }
+
+    /* ========================================
+       PROGRESS BAR
+    ======================================== */
+    .progress-bar {
+      position: fixed; top: 0; left: 0; height: 4px;
+      background: linear-gradient(90deg, var(--accent-coral), var(--accent-yellow), var(--accent-mint), var(--accent-sky), var(--accent-lavender));
+      background-size: 400% 100%;
+      transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+      z-index: 1000;
+      border-radius: 0 4px 4px 0;
+    }
+
+    /* ========================================
+       SLIDE COUNTER
+    ======================================== */
+    .slide-counter {
+      position: fixed; bottom: 24px; right: 28px;
+      font-size: 14px; font-weight: 600; color: var(--text-secondary);
+      z-index: 900; background: var(--surface);
+      padding: 6px 16px; border-radius: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      border: 1px solid var(--border);
+    }
+
+    /* ========================================
+       HINTS
+    ======================================== */
+    .hint {
+      position: fixed; bottom: 24px; left: 50%;
+      transform: translateX(-50%); font-size: 12px;
+      color: var(--text-secondary); z-index: 900;
+      display: flex; gap: 14px; opacity: 0.5;
+      transition: opacity 0.3s ease; background: var(--surface);
+      padding: 6px 18px; border-radius: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      border: 1px solid var(--border);
+    }
+    .hint:hover { opacity: 1; }
+    .hint kbd {
+      display: inline-block; padding: 2px 7px; font-size: 11px;
+      font-family: var(--font-code); background: var(--bg);
+      border: 1px solid var(--border); border-radius: 6px;
+      font-weight: 600; color: var(--accent-coral);
+    }
+
+    /* ========================================
+       FULLSCREEN BUTTON
+    ======================================== */
+    .fullscreen-btn {
+      position: fixed; bottom: 24px; left: 28px;
+      width: 40px; height: 40px; border: 1px solid var(--border);
+      border-radius: 50%; background: var(--surface);
+      color: var(--text-secondary); font-size: 18px; cursor: pointer;
+      z-index: 900; display: flex; align-items: center; justify-content: center;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), background 0.3s ease, color 0.3s ease;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    }
+    .fullscreen-btn:hover {
+      transform: scale(1.15) rotate(5deg);
+      background: var(--accent-coral); color: #fff; border-color: var(--accent-coral);
+    }
+
+    /* ========================================
+       DECK / SLIDES
+    ======================================== */
+    .deck { width: 100%; height: 100%; position: relative; }
+
+    .slide {
+      position: absolute; inset: 0;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+      padding: 60px 80px; opacity: 0; visibility: hidden;
+      transition: opacity 0.5s ease;
+      background: var(--bg); color: var(--text-primary);
+      overflow-y: auto;
+    }
+    .slide.active { opacity: 1; visibility: visible; }
+
+    /* ========================================
+       STAGGER ANIMATIONS (BOUNCY)
+    ======================================== */
+    @keyframes staggerIn {
+      0% { opacity: 0; transform: translateY(24px) scale(0.96); }
+      60% { transform: translateY(-4px) scale(1.01); }
+      100% { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    .slide.active .a { animation: staggerIn 0.6s cubic-bezier(0.34, 1.56, 0.64, 1) both; }
+    .slide.active .a:nth-child(1) { animation-delay: 0.05s; }
+    .slide.active .a:nth-child(2) { animation-delay: 0.12s; }
+    .slide.active .a:nth-child(3) { animation-delay: 0.19s; }
+    .slide.active .a:nth-child(4) { animation-delay: 0.26s; }
+    .slide.active .a:nth-child(5) { animation-delay: 0.33s; }
+    .slide.active .a:nth-child(6) { animation-delay: 0.40s; }
+    .slide.active .a:nth-child(7) { animation-delay: 0.47s; }
+    .slide.active .a:nth-child(8) { animation-delay: 0.54s; }
+    .slide.active .a:nth-child(9) { animation-delay: 0.61s; }
+    .slide.active .a:nth-child(10) { animation-delay: 0.68s; }
+
+    /* ========================================
+       TYPOGRAPHY UTILITY
+    ======================================== */
+    .xl { font-size: 64px; font-weight: 800; line-height: 1.15; letter-spacing: -2px; }
+    .lg { font-size: 42px; font-weight: 700; line-height: 1.25; letter-spacing: -1px; }
+    .md { font-size: 28px; font-weight: 600; line-height: 1.4; }
+    .sm { font-size: 20px; font-weight: 400; line-height: 1.6; }
+    .text-center { text-align: center; }
+    .text-secondary { color: var(--text-secondary); }
+    .mb-1 { margin-bottom: 12px; }
+    .mb-2 { margin-bottom: 24px; }
+    .mb-3 { margin-bottom: 36px; }
+
+    /* ========================================
+       TITLE
+    ======================================== */
+    .title-slide { gap: 16px; text-align: center; }
+    .title-slide .emoji-accent { font-size: 64px; display: block; margin-bottom: 8px; }
+    .title-slide .xl {
+      background: linear-gradient(135deg, var(--accent-coral), var(--accent-lavender), var(--accent-sky));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .title-slide .subtitle { font-size: 22px; font-weight: 400; color: var(--text-secondary); margin-top: 8px; }
+    .title-slide .tag-row { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; justify-content: center; }
+    .pill-tag {
+      display: inline-block; padding: 6px 18px; font-size: 13px; font-weight: 600;
+      border-radius: 20px; background: rgba(255, 107, 107, 0.12); color: var(--accent-coral);
+    }
+    .pill-tag.mint { background: rgba(81, 207, 102, 0.12); color: #37a34d; }
+    .pill-tag.sky { background: rgba(116, 192, 252, 0.12); color: #3a8fd4; }
+    .pill-tag.lavender { background: rgba(204, 93, 232, 0.12); color: #a844c4; }
+    .pill-tag.yellow { background: rgba(255, 212, 59, 0.15); color: #b8960a; }
+
+    /* ========================================
+       SECTION DIVIDER (custom)
+    ======================================== */
+    .section-slide { text-align: center; gap: 6px; }
+    .section-slide .section-emoji { font-size: 66px; display: block; margin-bottom: 6px; }
+    .section-slide .section-num {
+      font-size: 20px; font-weight: 800; letter-spacing: 5px;
+      color: var(--accent-coral); text-transform: uppercase;
+    }
+    .section-slide .section-title {
+      font-size: 52px; font-weight: 800; letter-spacing: -1.5px; margin-top: 6px;
+      background: linear-gradient(135deg, var(--accent-coral), var(--accent-lavender), var(--accent-sky));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .section-slide .section-desc { font-size: 18px; color: var(--text-secondary); margin-top: 12px; }
+
+    /* ========================================
+       AGENDA / TOC
+    ======================================== */
+    .agenda-list { list-style: none; width: 100%; max-width: 640px; margin-top: 20px; }
+    .agenda-list li {
+      display: flex; align-items: center; gap: 16px; padding: 14px 20px;
+      font-size: 20px; font-weight: 500; color: var(--text-primary);
+      border-radius: var(--radius-md);
+      transition: background 0.3s ease, transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .agenda-list li:hover { background: rgba(255, 107, 107, 0.06); transform: translateX(6px); }
+    .agenda-list li .agenda-emoji { font-size: 24px; flex-shrink: 0; }
+    .agenda-list li .agenda-num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 32px; height: 32px; border-radius: 50%;
+      font-size: 14px; font-weight: 700; flex-shrink: 0;
+    }
+    .agenda-list li:nth-child(1) .agenda-num { background: rgba(255, 107, 107, 0.15); color: var(--accent-coral); }
+    .agenda-list li:nth-child(2) .agenda-num { background: rgba(255, 212, 59, 0.18); color: #b8960a; }
+    .agenda-list li:nth-child(3) .agenda-num { background: rgba(81, 207, 102, 0.15); color: #37a34d; }
+    .agenda-list li:nth-child(4) .agenda-num { background: rgba(116, 192, 252, 0.15); color: #3a8fd4; }
+    .agenda-list li:nth-child(5) .agenda-num { background: rgba(204, 93, 232, 0.15); color: #a844c4; }
+
+    /* ========================================
+       CONTENT (BULLET POINTS)
+    ======================================== */
+    .content-body { width: 100%; max-width: 720px; text-align: left; }
+    .content-body p { font-size: 18px; line-height: 1.7; color: var(--text-secondary); margin-bottom: 24px; }
+    .content-body ul { list-style: none; margin-top: 8px; }
+    .content-body ul li {
+      font-size: 19px; line-height: 1.6; padding: 10px 0; padding-left: 32px;
+      position: relative; color: var(--text-primary);
+    }
+    .content-body ul li::before {
+      content: ''; position: absolute; left: 0; top: 18px;
+      width: 12px; height: 12px; border-radius: 50%;
+    }
+    .content-body ul li:nth-child(1)::before { background: var(--accent-coral); }
+    .content-body ul li:nth-child(2)::before { background: var(--accent-yellow); }
+    .content-body ul li:nth-child(3)::before { background: var(--accent-mint); }
+    .content-body ul li:nth-child(4)::before { background: var(--accent-sky); }
+    .content-body ul li:nth-child(5)::before { background: var(--accent-lavender); }
+    .content-body ul li b { color: var(--text-primary); font-weight: 700; }
+
+    /* ========================================
+       QUOTE / BIG QUESTION
+    ======================================== */
+    .quote-block { text-align: center; max-width: 760px; }
+    .quote-mark { font-size: 80px; line-height: 1; color: var(--accent-coral); font-weight: 800; opacity: 0.5; }
+    .quote-text { font-size: 34px; font-weight: 700; line-height: 1.45; color: var(--text-primary); margin: 8px 0 18px 0; }
+    .quote-attr { font-size: 18px; font-weight: 500; color: var(--text-secondary); line-height: 1.6; }
+    .quote-attr span { color: var(--accent-lavender); font-weight: 600; }
+
+    /* ========================================
+       COMPARISON
+    ======================================== */
+    .compare-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; width: 100%; max-width: 880px; margin-top: 24px; }
+    .compare-col { padding: 32px; border-radius: var(--radius-lg); border: 1px solid var(--border); }
+    .compare-col h3 { font-size: 20px; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 10px; }
+    .compare-col h3 .col-badge { display: inline-block; padding: 3px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+    .col-before { background: rgba(255, 107, 107, 0.04); border-color: rgba(255, 107, 107, 0.2); }
+    .col-before h3 .col-badge { background: rgba(255, 107, 107, 0.12); color: var(--accent-coral); }
+    .col-after { background: rgba(81, 207, 102, 0.04); border-color: rgba(81, 207, 102, 0.2); }
+    .col-after h3 .col-badge { background: rgba(81, 207, 102, 0.12); color: #37a34d; }
+    .compare-col ul { list-style: none; }
+    .compare-col ul li { font-size: 16px; line-height: 1.6; padding: 8px 0; padding-left: 26px; position: relative; color: var(--text-primary); }
+    .col-before ul li::before { content: '\2717'; position: absolute; left: 0; color: var(--accent-coral); font-weight: 700; font-size: 14px; }
+    .col-after ul li::before { content: '\2713'; position: absolute; left: 0; color: var(--accent-mint); font-weight: 700; font-size: 14px; }
+
+    /* ========================================
+       ANALOGY (2-CARD, custom)
+    ======================================== */
+    .analogy-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; width: 100%; max-width: 840px; margin-top: 24px; }
+    .analogy-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 36px 28px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .analogy-card:hover { transform: translateY(-5px) rotate(-1deg); }
+    .analogy-card .big-emoji { font-size: 60px; display: block; margin-bottom: 14px; }
+    .analogy-card h3 { font-size: 22px; font-weight: 700; margin-bottom: 10px; color: var(--text-primary); }
+    .analogy-card p { font-size: 15px; color: var(--text-secondary); line-height: 1.6; }
+    .analogy-card.is-agent { border-color: rgba(81,207,102,0.25); background: rgba(81,207,102,0.04); }
+
+    /* ========================================
+       FLOW / STEPS
+    ======================================== */
+    .flow-container { display: flex; align-items: center; gap: 16px; margin-top: 36px; width: 100%; max-width: 940px; justify-content: center; }
+    .flow-step {
+      flex: 1; text-align: center; padding: 28px 16px; border-radius: var(--radius-lg);
+      background: var(--surface); border: 1px solid var(--border);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+    }
+    .flow-step:hover { transform: translateY(-4px); box-shadow: 0 8px 30px rgba(0,0,0,0.08); }
+    .flow-step .step-circle {
+      width: 56px; height: 56px; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 26px; margin: 0 auto 14px;
+    }
+    .flow-step:nth-child(1) .step-circle { background: rgba(255, 107, 107, 0.15); }
+    .flow-step:nth-child(3) .step-circle { background: rgba(255, 212, 59, 0.18); }
+    .flow-step:nth-child(5) .step-circle { background: rgba(81, 207, 102, 0.15); }
+    .flow-step:nth-child(7) .step-circle { background: rgba(116, 192, 252, 0.15); }
+    .flow-step .step-num { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px; }
+    .flow-step .step-title { font-size: 19px; font-weight: 700; color: var(--text-primary); }
+    .flow-step .step-desc { font-size: 13px; color: var(--text-secondary); line-height: 1.5; margin-top: 8px; }
+    .flow-arrow { font-size: 26px; color: var(--accent-coral); flex-shrink: 0; font-weight: 300; opacity: 0.6; }
+    .flow-note { margin-top: 26px; font-size: 17px; font-weight: 600; color: var(--text-secondary); }
+    .flow-note b { color: var(--accent-coral); }
+
+    /* ========================================
+       FEATURE CARDS (3-col)
+    ======================================== */
+    .cards-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 24px; width: 100%; max-width: 880px; margin-top: 32px; }
+    .fun-card {
+      background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius-lg);
+      padding: 32px 24px; text-align: center; box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+    }
+    .fun-card:hover { transform: translateY(-6px) rotate(-1deg); box-shadow: 0 12px 36px rgba(0,0,0,0.08); }
+    .fun-card .card-emoji { font-size: 44px; display: block; margin-bottom: 16px; }
+    .fun-card h3 { font-size: 20px; font-weight: 700; margin-bottom: 10px; color: var(--text-primary); }
+    .fun-card p { font-size: 14px; line-height: 1.6; color: var(--text-secondary); }
+    .fun-card .card-tag { display: inline-block; margin-top: 16px; padding: 4px 14px; font-size: 12px; font-weight: 600; border-radius: 20px; }
+    .cards-grid .fun-card:nth-child(1) .card-tag { background: rgba(255, 107, 107, 0.12); color: var(--accent-coral); }
+    .cards-grid .fun-card:nth-child(2) .card-tag { background: rgba(81, 207, 102, 0.12); color: #37a34d; }
+    .cards-grid .fun-card:nth-child(3) .card-tag { background: rgba(116, 192, 252, 0.12); color: #3a8fd4; }
+
+    /* ========================================
+       4-CARD GRID (custom)
+    ======================================== */
+    .grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; width: 100%; max-width: 980px; margin-top: 28px; }
+    .grid-4 .fun-card { padding: 28px 18px; }
+    .grid-4 .fun-card .card-emoji { font-size: 42px; margin-bottom: 12px; }
+    .grid-4 .fun-card h3 { font-size: 18px; margin-bottom: 8px; }
+    .grid-4 .fun-card p { font-size: 13px; }
+    .grid-4 .fun-card:nth-child(1) .card-tag { background: rgba(255, 107, 107, 0.12); color: var(--accent-coral); }
+    .grid-4 .fun-card:nth-child(2) .card-tag { background: rgba(255, 212, 59, 0.18); color: #b8960a; }
+    .grid-4 .fun-card:nth-child(3) .card-tag { background: rgba(81, 207, 102, 0.12); color: #37a34d; }
+    .grid-4 .fun-card:nth-child(4) .card-tag { background: rgba(116, 192, 252, 0.12); color: #3a8fd4; }
+
+    /* ========================================
+       CALLOUT / DEFINITION BOX (custom)
+    ======================================== */
+    .callout {
+      width: 100%; max-width: 780px; margin-top: 24px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-left: 6px solid var(--accent-coral); border-radius: var(--radius-lg);
+      padding: 30px 34px; text-align: left; box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+    }
+    .callout.warn { border-left-color: var(--accent-yellow); }
+    .callout .callout-lead { font-size: 25px; font-weight: 700; line-height: 1.55; color: var(--text-primary); }
+    .callout .callout-sub { font-size: 16px; color: var(--text-secondary); line-height: 1.7; margin-top: 14px; }
+    .hl { color: var(--accent-coral); font-weight: 800; }
+    .hl.sky { color: #3a8fd4; }
+    .hl.mint { color: #37a34d; }
+    .hl.lav { color: #a844c4; }
+    .hl.yellow { color: #b8960a; }
+
+    /* ========================================
+       BUBBLE FLOW (demo conversation, custom)
+    ======================================== */
+    .bubble-flow { display: flex; flex-direction: column; gap: 12px; width: 100%; max-width: 720px; margin-top: 24px; }
+    .bubble {
+      display: flex; align-items: flex-start; gap: 14px;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 16px 20px; text-align: left;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+    }
+    .bubble.think { background: rgba(255, 212, 59, 0.07); border-color: rgba(255, 212, 59, 0.3); }
+    .bubble.tool { background: rgba(116, 192, 252, 0.07); border-color: rgba(116, 192, 252, 0.3); }
+    .bubble.answer { background: rgba(81, 207, 102, 0.07); border-color: rgba(81, 207, 102, 0.3); }
+    .bubble .b-emoji { font-size: 28px; flex-shrink: 0; line-height: 1.2; }
+    .bubble .b-role { font-size: 12px; font-weight: 700; color: var(--text-secondary); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
+    .bubble .b-text { font-size: 16px; color: var(--text-primary); line-height: 1.5; }
+
+    /* ========================================
+       PROMPT CARD (custom)
+    ======================================== */
+    .prompt-card {
+      width: 100%; max-width: 820px; margin-top: 20px; text-align: left;
+      background: var(--surface); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); box-shadow: 0 4px 20px rgba(0,0,0,0.04);
+      overflow: hidden;
+    }
+    .prompt-head {
+      display: flex; align-items: center; gap: 8px;
+      padding: 13px 22px; background: #fafafa; border-bottom: 1px solid var(--border);
+      font-size: 13px; font-weight: 600; color: var(--text-secondary); font-family: var(--font-code);
+    }
+    .prompt-head .prompt-emoji { font-size: 18px; }
+    .prompt-body { padding: 22px 26px; display: flex; flex-direction: column; gap: 16px; }
+    .prompt-body .p-line { font-size: 17px; line-height: 1.6; color: var(--text-primary); display: flex; gap: 12px; align-items: flex-start; }
+    .prompt-body .p-line b { font-weight: 700; }
+    .p-tag {
+      flex-shrink: 0; display: inline-block; padding: 3px 12px; border-radius: 14px;
+      font-size: 12px; font-weight: 700; white-space: nowrap; margin-top: 2px;
+    }
+    .p-tag.coral { background: rgba(255, 107, 107, 0.12); color: var(--accent-coral); }
+    .p-tag.sky { background: rgba(116, 192, 252, 0.12); color: #3a8fd4; }
+    .p-tag.mint { background: rgba(81, 207, 102, 0.12); color: #37a34d; }
+    .p-tag.lav { background: rgba(204, 93, 232, 0.12); color: #a844c4; }
+
+    /* ========================================
+       CODE BLOCK
+    ======================================== */
+    .code-wrapper { width: 100%; max-width: 760px; margin-top: 24px; }
+    .code-header {
+      display: flex; align-items: center; gap: 8px; padding: 14px 20px;
+      background: #fafafa; border-radius: var(--radius-md) var(--radius-md) 0 0;
+      border: 1px solid var(--border); border-bottom: none;
+    }
+    .code-dot { width: 12px; height: 12px; border-radius: 50%; }
+    .code-dot.red { background: var(--accent-coral); }
+    .code-dot.yellow { background: var(--accent-yellow); }
+    .code-dot.green { background: var(--accent-mint); }
+    .code-header .code-filename { font-size: 13px; color: var(--text-secondary); margin-left: 12px; font-family: var(--font-code); font-weight: 600; }
+    .code-wrapper pre {
+      margin: 0; border-radius: 0 0 var(--radius-md) var(--radius-md);
+      background: #ffffff !important; border: 1px solid var(--border); border-top: none;
+      padding: 24px 24px !important; max-height: 52vh; overflow-y: auto;
+    }
+    .code-wrapper pre code { font-family: var(--font-code) !important; font-size: 14px !important; line-height: 1.7 !important; }
+
+    /* ========================================
+       CLOSING
+    ======================================== */
+    .closing-slide { gap: 16px; text-align: center; }
+    .closing-slide .closing-emoji { font-size: 64px; display: block; }
+    .closing-slide .closing-title {
+      font-size: 80px; font-weight: 800; letter-spacing: -3px; line-height: 1;
+      background: linear-gradient(135deg, var(--accent-coral), var(--accent-lavender), var(--accent-sky));
+      -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
+    }
+    .closing-slide .closing-sub { font-size: 20px; font-weight: 400; color: var(--text-secondary); margin-top: 8px; }
+    .closing-links { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; justify-content: center; }
+    .closing-link-btn {
+      display: inline-flex; align-items: center; gap: 8px; padding: 10px 24px;
+      font-size: 15px; font-weight: 600; border-radius: 24px; text-decoration: none;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.3s ease;
+    }
+    .closing-link-btn:hover { transform: translateY(-3px) scale(1.03); box-shadow: 0 8px 24px rgba(0,0,0,0.1); }
+    .closing-link-btn.coral { background: rgba(255, 107, 107, 0.12); color: var(--accent-coral); }
+    .closing-link-btn.sky { background: rgba(116, 192, 252, 0.12); color: #3a8fd4; }
+    .closing-link-btn.lavender { background: rgba(204, 93, 232, 0.12); color: #a844c4; }
+
+    /* ========================================
+       RESPONSIVE
+    ======================================== */
+    @media (max-width: 900px) {
+      .slide { padding: 48px 32px; }
+      .xl { font-size: 44px; }
+      .lg { font-size: 32px; }
+      .md { font-size: 22px; }
+      .sm { font-size: 17px; }
+      .title-slide .xl { font-size: 46px; }
+      .section-slide .section-title { font-size: 38px; }
+      .closing-slide .closing-title { font-size: 56px; }
+      .quote-text { font-size: 26px; }
+      .compare-grid, .analogy-grid { grid-template-columns: 1fr; gap: 20px; }
+      .cards-grid, .grid-4 { grid-template-columns: 1fr 1fr; }
+      .flow-container { flex-direction: column; gap: 12px; }
+      .flow-arrow { transform: rotate(90deg); }
+    }
+
+    /* ========================================
+       PRINT / PDF EXPORT
+    ======================================== */
+    @media print {
+      html, body { width: 100%; height: auto; overflow: visible; background: #fff; }
+      .progress-bar, .slide-counter, .hint, .fullscreen-btn { display: none !important; }
+      .deck { width: 100%; height: auto; }
+      .slide {
+        position: relative; opacity: 1 !important; visibility: visible !important;
+        page-break-after: always; page-break-inside: avoid;
+        width: 100%; height: 100vh; padding: 60px 80px;
+        print-color-adjust: exact; -webkit-print-color-adjust: exact;
+      }
+      .slide .a { opacity: 1 !important; transform: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Progress Bar -->
+  <div class="progress-bar" id="progress"></div>
+
+  <!-- Slide Counter -->
+  <div class="slide-counter" id="counter"></div>
+
+  <!-- Keyboard Hints -->
+  <div class="hint" id="hint">
+    <kbd>&larr;</kbd><kbd>&rarr;</kbd> 이동
+    <kbd>F</kbd> 전체화면
+    <kbd>S</kbd> 노트
+  </div>
+
+  <!-- Fullscreen Button -->
+  <button class="fullscreen-btn" id="fs-btn" onclick="toggleFullscreen()">&#x26F6;</button>
+
+  <!-- ============================================================
+       SLIDE DECK
+  ============================================================ -->
+  <div class="deck" id="deck">
+
+    <!-- ===== SLIDE 1: TITLE ===== -->
+    <div class="slide active title-slide" data-notes="안녕하세요, 여러분! 오늘 첫 강의에 오신 걸 환영합니다. [밝게 시작] 요즘 'AI 에이전트'라는 말, 뉴스나 유튜브에서 한 번쯤 들어보셨을 거예요. 오늘은 이 AI 에이전트가 도대체 뭔지, 챗봇이랑 뭐가 다른지, 그리고 실제로 어떻게 쓰이는지를 비전공자도 이해할 수 있게 차근차근 풀어볼게요. [약 1분] 편하게 들어주세요. 어려운 수학이나 코드는 거의 없습니다!">
+      <span class="a emoji-accent">&#129302;</span>
+      <h1 class="a xl">AI 에이전트의 이해</h1>
+      <p class="a subtitle">스스로 생각하고 행동하는 AI의 시작</p>
+      <div class="a tag-row">
+        <span class="pill-tag">Lecture 01</span>
+        <span class="pill-tag mint">입문</span>
+        <span class="pill-tag sky">개념 + 사례 + 데모</span>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 2: AGENDA ===== -->
+    <div class="slide" data-notes="오늘 다룰 내용을 먼저 지도처럼 펼쳐 보여드릴게요. 크게 다섯 부분입니다. 먼저 '에이전트가 뭔지' 개념을 잡고, 그 다음 '무엇으로 이뤄져 있는지' 부품을 뜯어봅니다. 이어서 '어떻게 동작하는지' 원리를 보고, 실제 '사례'를 구경한 뒤, 마지막으로 아주 간단한 '데모'로 직접 느껴볼 거예요. [약 40초] 전체 20분 정도로 가볍게 갑니다.">
+      <h2 class="a lg text-center mb-2">&#128203; 오늘 다룰 내용</h2>
+      <ul class="a agenda-list">
+        <li class="a"><span class="agenda-num">1</span><span class="agenda-emoji">&#128161;</span> AI 에이전트란 무엇인가?</li>
+        <li class="a"><span class="agenda-num">2</span><span class="agenda-emoji">&#129513;</span> 무엇으로 이뤄지나 — 4가지 부품</li>
+        <li class="a"><span class="agenda-num">3</span><span class="agenda-emoji">&#9881;&#65039;</span> 어떻게 동작하나 — 생각·행동·관찰</li>
+        <li class="a"><span class="agenda-num">4</span><span class="agenda-emoji">&#127757;</span> 실제 사례 둘러보기</li>
+        <li class="a"><span class="agenda-num">5</span><span class="agenda-emoji">&#128064;</span> 직접 보기 — 아주 간단한 데모</li>
+      </ul>
+    </div>
+
+    <!-- ===== SLIDE 3: SECTION 01 ===== -->
+    <div class="slide section-slide" data-notes="자, 첫 번째 파트입니다. 'AI 에이전트란 무엇인가?' 이름은 거창하지만 개념은 의외로 단순해요. 차근차근 가보겠습니다. [전환] 먼저 우리가 매일 쓰는 챗봇 이야기로 시작해 볼게요.">
+      <span class="a section-emoji">&#128161;</span>
+      <div class="a section-num">Part 01</div>
+      <h2 class="a section-title">AI 에이전트란?</h2>
+      <p class="a section-desc">챗봇과는 무엇이 다를까요?</p>
+    </div>
+
+    <!-- ===== SLIDE 4: HOOK QUESTION ===== -->
+    <div class="slide" data-notes="질문 하나 던질게요. [청중에게 질문] ChatGPT 같은 챗봇한테 '내일 제주도 가는 항공권 예약해줘'라고 하면 어떻게 될까요? 네, 말은 정말 잘합니다. '어느 항공사로 할까요?'라고 되묻기도 하죠. 하지만 실제로 예약 사이트에 들어가서, 좌석을 고르고, 카드로 결제까지 해주지는 못합니다. 바로 이 '말하기'와 '실제로 해내기' 사이의 간극, 그걸 메우는 게 오늘의 주인공 AI 에이전트예요. [약 1분]">
+      <div class="a quote-block">
+        <div class="quote-mark">&#10077;</div>
+        <p class="quote-text">&ldquo;내일 항공권 예약해줘&rdquo;</p>
+        <p class="quote-attr">챗봇은 <span>말</span>은 잘하지만,<br>스스로 사이트에 들어가 <span>예약·결제</span>까지 하진 못합니다.</p>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 5: DEFINITION ===== -->
+    <div class="slide" data-notes="그래서 AI 에이전트를 한 문장으로 정의하면 이렇습니다. '목표를 받으면, 스스로 계획을 세우고, 도구를 사용해서, 끝까지 행동하는 AI.' 여기서 핵심 단어 세 개를 꼭 기억하세요 — 계획, 도구, 행동. 챗봇이 '대답하는 AI'라면, 에이전트는 '일을 해내는 AI'입니다. [약 1분] 이 차이를 다음 슬라이드에서 더 쉬운 비유로 풀어볼게요.">
+      <h2 class="a lg text-center mb-1">&#127919; 한 문장 정의</h2>
+      <div class="a callout">
+        <p class="callout-lead">AI 에이전트는 목표를 받으면 스스로 <span class="hl">계획</span>하고, <span class="hl sky">도구</span>를 사용해, <span class="hl mint">행동</span>하는 AI입니다.</p>
+        <p class="callout-sub">챗봇 = 대답하는 AI &nbsp;·&nbsp; 에이전트 = <b>일을 해내는</b> AI</p>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 6: ANALOGY ===== -->
+    <div class="slide" data-notes="비유로 가볼게요. 챗봇은 '아는 게 많은 친구'예요. 물어보면 척척 대답해 주죠. 그런데 '대신 처리해 줘'라고 하면 직접 해주진 않아요. 반면 에이전트는 '똑똑한 인턴'에 가깝습니다. '이 자료 좀 조사해서 정리해 줘'라고 일을 맡기면, 알아서 검색하고, 정리하고, 결과를 가져옵니다. [청중에게 질문] 여러분이라면 어떤 쪽이 더 일을 덜어줄까요? [약 1분]">
+      <h2 class="a lg text-center mb-1">&#129309; 쉬운 비유</h2>
+      <p class="a sm text-center text-secondary mb-2">챗봇 vs 에이전트, 사람으로 비유하면?</p>
+      <div class="a analogy-grid">
+        <div class="analogy-card">
+          <span class="big-emoji">&#128172;</span>
+          <h3>챗봇 = 아는 게 많은 친구</h3>
+          <p>물어보면 척척 대답해 줍니다.<br>하지만 &ldquo;대신 처리해 줘&rdquo;는 못 해요.</p>
+        </div>
+        <div class="analogy-card is-agent">
+          <span class="big-emoji">&#129489;&#8205;&#128188;</span>
+          <h3>에이전트 = 똑똑한 인턴</h3>
+          <p>일을 맡기면 알아서 검색하고,<br>정리해서 <b>결과까지</b> 가져옵니다.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 7: COMPARISON ===== -->
+    <div class="slide" data-notes="이제 둘을 표로 깔끔하게 비교해 봅시다. 왼쪽 챗봇은 질문 한 번에 답 한 번, 도구를 못 쓰고, 매번 사람이 다음 지시를 해줘야 하는 단발성 대화예요. 오른쪽 에이전트는 목표 하나만 주면 스스로 여러 단계를 밟고, 도구로 직접 실행하고, 다음에 뭘 할지 알아서 정하면서 끝까지 수행합니다. [약 1분] 핵심은 '스스로', 그리고 '여러 단계'입니다.">
+      <h2 class="a lg text-center mb-2">&#9878;&#65039; 챗봇 vs 에이전트</h2>
+      <div class="a compare-grid">
+        <div class="compare-col col-before">
+          <h3>챗봇 <span class="col-badge">대화형</span></h3>
+          <ul>
+            <li>질문 1번 &rarr; 답변 1번</li>
+            <li>외부 도구를 사용하지 못함</li>
+            <li>매번 사람이 다음 단계를 지시</li>
+            <li>한 번의 대화로 끝나는 단발성</li>
+          </ul>
+        </div>
+        <div class="compare-col col-after">
+          <h3>에이전트 <span class="col-badge">실행형</span></h3>
+          <ul>
+            <li>목표 1번 &rarr; 여러 단계 스스로 수행</li>
+            <li>검색·계산 등 도구로 직접 실행</li>
+            <li>다음 행동을 스스로 판단</li>
+            <li>목표 달성까지 끝까지 진행</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 8: SECTION 02 ===== -->
+    <div class="slide section-slide" data-notes="두 번째 파트입니다. 에이전트가 '스스로 일한다'고 했는데, 그게 가능하려면 안에 뭐가 들어 있어야 할까요? 에이전트를 분해해서 네 가지 핵심 부품을 살펴보겠습니다. [전환]">
+      <span class="a section-emoji">&#129513;</span>
+      <div class="a section-num">Part 02</div>
+      <h2 class="a section-title">무엇으로 이뤄지나</h2>
+      <p class="a section-desc">에이전트를 분해해 보는 시간</p>
+    </div>
+
+    <!-- ===== SLIDE 9: 4 COMPONENTS OVERVIEW ===== -->
+    <div class="slide" data-notes="에이전트는 크게 네 가지 부품으로 이뤄집니다. 사람에 빗대면 이해가 쉬워요. 첫째, 두뇌인 LLM — 생각하고 판단하는 중심. 둘째, 도구 — 검색이나 계산처럼 실제로 무언가를 해내는 손과 발. 셋째, 메모리 — 무슨 일이 있었는지 기억하는 능력. 넷째, 계획 — 큰 목표를 작은 단계로 쪼개는 능력. 이 네 개가 합쳐지면 '스스로 일하는 AI'가 됩니다. [약 1분] 하나씩 자세히 볼게요.">
+      <h2 class="a lg text-center mb-1">&#129513; 4가지 핵심 부품</h2>
+      <p class="a sm text-center text-secondary mb-2">사람에 빗대어 보면 쉽습니다</p>
+      <div class="a grid-4">
+        <div class="fun-card">
+          <span class="card-emoji">&#129504;</span>
+          <h3>두뇌 (LLM)</h3>
+          <p>생각하고 판단하는 중심</p>
+          <span class="card-tag">Brain</span>
+        </div>
+        <div class="fun-card">
+          <span class="card-emoji">&#128296;</span>
+          <h3>도구 (Tools)</h3>
+          <p>실제로 해내는 손과 발</p>
+          <span class="card-tag">Tools</span>
+        </div>
+        <div class="fun-card">
+          <span class="card-emoji">&#128190;</span>
+          <h3>메모리 (Memory)</h3>
+          <p>겪은 일을 기억</p>
+          <span class="card-tag">Memory</span>
+        </div>
+        <div class="fun-card">
+          <span class="card-emoji">&#128506;&#65039;</span>
+          <h3>계획 (Planning)</h3>
+          <p>목표를 단계로 쪼개기</p>
+          <span class="card-tag">Plan</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 10: LLM ===== -->
+    <div class="slide" data-notes="첫 번째 부품, 두뇌인 LLM입니다. LLM은 'Large Language Model', 즉 거대 언어 모델이에요. ChatGPT나 Claude가 바로 이 LLM이죠. 에이전트에서 LLM의 역할은 '지금 무엇을 해야 할까?'를 판단하는 겁니다. 사람의 두뇌처럼, 상황을 보고 다음 행동을 결정해요. 단, LLM 혼자서는 생각만 할 뿐 직접 행동은 못 합니다 — 그래서 도구가 필요하죠. [약 1분]">
+      <h2 class="a lg mb-1">&#129504; 부품 ① 두뇌 &mdash; LLM</h2>
+      <p class="a sm text-secondary mb-2">Large Language Model (거대 언어 모델)</p>
+      <div class="a content-body">
+        <ul>
+          <li class="a"><b>ChatGPT, Claude</b> 같은 모델이 바로 LLM입니다</li>
+          <li class="a">상황을 보고 &ldquo;<b>지금 무엇을 할까</b>&rdquo;를 판단</li>
+          <li class="a">사람의 두뇌처럼 다음 행동을 결정하는 중심</li>
+          <li class="a">단, 혼자서는 생각만 &mdash; 행동하려면 도구가 필요</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 11: TOOLS ===== -->
+    <div class="slide" data-notes="두 번째 부품, 도구입니다. 도구는 LLM의 '손과 발'이에요. 두뇌가 '날씨를 알아봐야겠다'고 판단하면, 실제로 날씨를 알아오는 건 도구의 몫이죠. 웹 검색, 계산기, 이메일 보내기, 캘린더 확인, 외부 프로그램 호출 같은 게 다 도구입니다. 도구가 많을수록 에이전트가 할 수 있는 일이 늘어나요. 사람으로 치면, 손에 든 연장이 많아지는 셈이죠. [약 1분]">
+      <h2 class="a lg mb-1">&#128296; 부품 ② 도구 &mdash; Tools</h2>
+      <p class="a sm text-secondary mb-2">LLM의 손과 발 &mdash; 실제로 무언가를 해내는 장치</p>
+      <div class="a content-body">
+        <ul>
+          <li class="a"><b>웹 검색</b> &mdash; 최신 정보를 찾아온다</li>
+          <li class="a"><b>계산기</b> &mdash; 정확한 계산을 한다</li>
+          <li class="a"><b>이메일·캘린더</b> &mdash; 보내고 일정을 확인한다</li>
+          <li class="a"><b>외부 프로그램(API)</b> &mdash; 다른 서비스를 부른다</li>
+          <li class="a">도구가 많을수록 할 수 있는 일이 늘어난다</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 12: MEMORY ===== -->
+    <div class="slide" data-notes="세 번째 부품, 메모리입니다. 에이전트가 여러 단계를 거치려면, 앞에서 무슨 일이 있었는지 기억해야겠죠? 메모리는 두 종류로 나눌 수 있어요. 단기 기억은 '지금 이 대화에서 방금 한 일'이고, 장기 기억은 '예전에 했던 작업이나 사용자의 취향' 같은 거예요. 메모리 덕분에 에이전트가 맥락을 잃지 않고, '아까 검색한 결과'를 활용해 다음 행동을 이어갈 수 있습니다. [약 1분]">
+      <h2 class="a lg mb-1">&#128190; 부품 ③ 메모리 &mdash; Memory</h2>
+      <p class="a sm text-secondary mb-2">겪은 일을 기억해 맥락을 유지</p>
+      <div class="a content-body">
+        <ul>
+          <li class="a"><b>단기 기억</b> &mdash; 지금 이 대화에서 방금 한 일</li>
+          <li class="a"><b>장기 기억</b> &mdash; 이전 작업, 사용자의 취향과 기록</li>
+          <li class="a">덕분에 &ldquo;아까 찾은 결과&rdquo;를 다음 행동에 활용</li>
+          <li class="a">맥락을 잃지 않고 여러 단계를 이어간다</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 13: PLANNING ===== -->
+    <div class="slide" data-notes="네 번째 부품, 계획입니다. 큰 목표를 한 번에 해내긴 어렵죠. 그래서 에이전트는 목표를 작은 단계로 쪼갭니다. 예를 들어 '여행 준비해 줘'라는 목표가 오면, 항공권 알아보기, 숙소 찾기, 일정 짜기처럼 단계로 나눠서 하나씩 처리해요. 사람이 큰일을 할 때 '할 일 목록'을 만드는 것과 똑같습니다. 이 네 가지 부품 — 두뇌, 도구, 메모리, 계획 — 이 합쳐지면 비로소 에이전트가 됩니다. [약 1분] 그럼 이게 실제로 어떻게 굴러가는지 볼까요?">
+      <h2 class="a lg mb-1">&#128506;&#65039; 부품 ④ 계획 &mdash; Planning</h2>
+      <p class="a sm text-secondary mb-2">큰 목표를 작은 단계로 쪼개기</p>
+      <div class="a content-body">
+        <p>예) &ldquo;여행 준비해 줘&rdquo; 라는 큰 목표가 들어오면&hellip;</p>
+        <ul>
+          <li class="a">&#9989; 항공권 알아보기</li>
+          <li class="a">&#9989; 숙소 찾기</li>
+          <li class="a">&#9989; 일정 짜기</li>
+          <li class="a">사람이 &ldquo;할 일 목록&rdquo;을 만드는 것과 똑같다</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 14: SECTION 03 ===== -->
+    <div class="slide section-slide" data-notes="세 번째 파트, 가장 중요한 부분입니다. 이 네 가지 부품이 모여서 실제로 '어떻게 동작하는가'. 에이전트의 심장 박동 같은 반복 고리를 보여드릴게요. [전환]">
+      <span class="a section-emoji">&#9881;&#65039;</span>
+      <div class="a section-num">Part 03</div>
+      <h2 class="a section-title">어떻게 동작하나</h2>
+      <p class="a section-desc">생각 → 행동 → 관찰, 그리고 반복</p>
+    </div>
+
+    <!-- ===== SLIDE 15: ACTION LOOP ===== -->
+    <div class="slide" data-notes="에이전트의 동작은 이 세 박자의 반복입니다. 첫째, 생각 — 지금 무엇을 해야 할지 두뇌가 판단해요. 둘째, 행동 — 도구를 써서 실제로 실행합니다. 셋째, 관찰 — 그 결과가 어땠는지 확인하고 기억하죠. 그리고 다시 생각으로 돌아갑니다. 이 고리를 목표가 달성될 때까지 빙글빙글 반복해요. 마치 우리가 요리할 때 '맛보고 → 간을 맞추고 → 다시 맛보는' 것과 비슷합니다. [약 1분 20초]">
+      <h2 class="a lg text-center">&#128260; 에이전트의 동작 고리</h2>
+      <p class="a sm text-center text-secondary mb-1">목표를 이룰 때까지 이 세 박자를 반복합니다</p>
+      <div class="a flow-container">
+        <div class="flow-step">
+          <div class="step-circle">&#128173;</div>
+          <div class="step-num">Step 01</div>
+          <div class="step-title">생각</div>
+          <div class="step-desc">무엇을 할지 판단</div>
+        </div>
+        <span class="flow-arrow">&#10132;</span>
+        <div class="flow-step">
+          <div class="step-circle">&#128400;&#65039;</div>
+          <div class="step-num">Step 02</div>
+          <div class="step-title">행동</div>
+          <div class="step-desc">도구로 실행</div>
+        </div>
+        <span class="flow-arrow">&#10132;</span>
+        <div class="flow-step">
+          <div class="step-circle">&#128064;</div>
+          <div class="step-num">Step 03</div>
+          <div class="step-title">관찰</div>
+          <div class="step-desc">결과 확인·기억</div>
+        </div>
+      </div>
+      <p class="a flow-note">&#128260; 충분해질 때까지 <b>반복</b> &nbsp;&rarr;&nbsp; &#9989; 완료</p>
+    </div>
+
+    <!-- ===== SLIDE 16: ReAct ===== -->
+    <div class="slide" data-notes="이 동작 방식에는 멋진 이름이 붙어 있어요. 바로 'ReAct'입니다. Reasoning, 추론과 Acting, 행동을 합친 말이에요. 핵심은 '생각만 하지도, 무작정 행동만 하지도 않는다'는 거예요. 생각하고, 행동하고, 결과를 보고, 또 생각합니다. 이렇게 생각과 행동을 번갈아 하기 때문에, 중간에 잘못돼도 스스로 고쳐가며 목표에 다가갈 수 있어요. 이 단어 하나만 기억하셔도 오늘 절반은 성공입니다. [약 1분]">
+      <h2 class="a lg text-center mb-1">&#129526; ReAct 쉽게 이해하기</h2>
+      <div class="a callout">
+        <p class="callout-lead"><span class="hl">Re</span>asoning(추론) <span class="hl yellow">+</span> <span class="hl mint">Act</span>ing(행동) = <span class="hl lav">ReAct</span></p>
+        <p class="callout-sub">생각만 하지도, 무작정 행동만 하지도 않습니다. <b>생각 → 행동 → 결과 확인 → 다시 생각.</b> 번갈아 하기 때문에 중간에 틀려도 스스로 고쳐가며 목표에 다가갑니다.</p>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 17: WALKTHROUGH ===== -->
+    <div class="slide" data-notes="말로만 하면 추상적이니, 한 번 따라가 봅시다. 사용자가 '내일 서울 날씨 어때?'라고 물어요. 1단계 생각 — 에이전트는 '최신 날씨는 내 머릿속에 없으니, 날씨 도구가 필요하겠다'고 판단합니다. 2단계 행동 — 날씨 검색 도구를 실행해요. 3단계 관찰 — '12도, 비'라는 결과를 받습니다. 4단계 답변 — 이 결과를 사람이 알아듣기 쉽게 정리해서 '내일 서울은 12도에 비가 와요, 우산 챙기세요'라고 답하죠. 보셨죠? 생각-행동-관찰-답변. [약 1분 20초]">
+      <h2 class="a lg text-center">&#127783;&#65039; 한 번 따라가 보기</h2>
+      <p class="a sm text-center text-secondary mb-1">&ldquo;내일 서울 날씨 어때?&rdquo; 라고 물으면&hellip;</p>
+      <div class="a flow-container">
+        <div class="flow-step">
+          <div class="step-circle">&#10067;</div>
+          <div class="step-num">질문</div>
+          <div class="step-title">내일 날씨?</div>
+          <div class="step-desc">사용자가 묻는다</div>
+        </div>
+        <span class="flow-arrow">&#10132;</span>
+        <div class="flow-step">
+          <div class="step-circle">&#128173;</div>
+          <div class="step-num">생각</div>
+          <div class="step-title">도구 필요</div>
+          <div class="step-desc">&ldquo;날씨를 찾아보자&rdquo;</div>
+        </div>
+        <span class="flow-arrow">&#10132;</span>
+        <div class="flow-step">
+          <div class="step-circle">&#128400;&#65039;</div>
+          <div class="step-num">행동·관찰</div>
+          <div class="step-title">검색 실행</div>
+          <div class="step-desc">&ldquo;12&deg;C, 비&rdquo; 확인</div>
+        </div>
+        <span class="flow-arrow">&#10132;</span>
+        <div class="flow-step">
+          <div class="step-circle">&#9989;</div>
+          <div class="step-num">답변</div>
+          <div class="step-title">정리해 응답</div>
+          <div class="step-desc">&ldquo;우산 챙기세요&rdquo;</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 18: SECTION 04 ===== -->
+    <div class="slide section-slide" data-notes="네 번째 파트, 이제 재미있는 부분이에요. 이 에이전트가 실제로 어디에 쓰이고 있는지 사례를 둘러봅시다. 생각보다 이미 우리 가까이 와 있습니다. [전환]">
+      <span class="a section-emoji">&#127757;</span>
+      <div class="a section-num">Part 04</div>
+      <h2 class="a section-title">실제 사례</h2>
+      <p class="a section-desc">이미 우리 가까이 와 있습니다</p>
+    </div>
+
+    <!-- ===== SLIDE 19: CASE 1 CODING ===== -->
+    <div class="slide" data-notes="첫 번째 사례, 코딩 에이전트입니다. 사실 오늘 이 발표 자료도 코딩 에이전트가 만들었어요. Claude Code나 Cursor 같은 도구가 대표적인데요, 개발자가 '로그인 기능 만들어 줘'라고 요구하면, 에이전트가 알아서 코드를 작성하고, 파일을 수정하고, 실행해서 오류까지 고쳐 줍니다. 비전공자분들도 이제 말로 설명만 하면 간단한 프로그램을 만들 수 있는 시대예요. [약 1분]">
+      <h2 class="a lg mb-1">&#128187; 사례 ① 코딩 에이전트</h2>
+      <p class="a sm text-secondary mb-2">Claude Code, Cursor &hellip; (이 슬라이드도 이렇게 만들어졌어요!)</p>
+      <div class="a content-body">
+        <ul>
+          <li class="a">&ldquo;로그인 기능 만들어 줘&rdquo;라고 <b>말로</b> 요청</li>
+          <li class="a">에이전트가 코드를 작성하고 파일을 수정</li>
+          <li class="a">직접 실행해 보고 <b>오류까지 스스로 수정</b></li>
+          <li class="a">비전공자도 설명만으로 간단한 프로그램 제작</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 20: CASE 2 RESEARCH ===== -->
+    <div class="slide" data-notes="두 번째 사례, 리서치 에이전트입니다. '전기차 시장 동향을 조사해서 한 장으로 정리해 줘'라고 하면, 에이전트가 여러 웹사이트를 돌아다니며 자료를 찾고, 중요한 내용을 골라, 요약 보고서를 만들어 줍니다. 사람이 몇 시간 걸릴 자료 조사를 몇 분으로 줄여주죠. 물론 사실 확인은 사람이 한 번 더 해주는 게 좋습니다 — 뒤에서 한계로 다시 이야기할게요. [약 1분]">
+      <h2 class="a lg mb-1">&#128270; 사례 ② 리서치·검색 에이전트</h2>
+      <p class="a sm text-secondary mb-2">자료 조사와 요약을 대신해 줍니다</p>
+      <div class="a content-body">
+        <ul>
+          <li class="a">&ldquo;OO 시장 동향 조사해 줘&rdquo; 한마디면 시작</li>
+          <li class="a">여러 웹사이트를 돌며 자료를 수집</li>
+          <li class="a">중요한 내용만 골라 <b>요약 보고서</b> 작성</li>
+          <li class="a">몇 시간 걸릴 조사를 몇 분으로 단축</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 21: CASE 3 AUTOMATION ===== -->
+    <div class="slide" data-notes="세 번째 사례, 업무 자동화 에이전트입니다. 반복적이고 귀찮은 일을 대신해 줘요. 쌓인 이메일을 중요도별로 분류하고, 회의 일정을 잡아 캘린더에 등록하고, 매주 반복되는 보고서를 자동으로 작성하는 식이죠. 사람은 더 창의적이고 중요한 일에 집중할 수 있게 됩니다. '디지털 비서'라고 생각하시면 딱 맞아요. [약 1분]">
+      <h2 class="a lg mb-1">&#128231; 사례 ③ 업무 자동화 에이전트</h2>
+      <p class="a sm text-secondary mb-2">반복적이고 귀찮은 일을 대신 &mdash; 디지털 비서</p>
+      <div class="a content-body">
+        <ul>
+          <li class="a">쌓인 <b>이메일</b>을 중요도별로 분류</li>
+          <li class="a">회의 <b>일정</b>을 잡고 캘린더에 등록</li>
+          <li class="a">매주 반복되는 <b>보고서</b>를 자동 작성</li>
+          <li class="a">사람은 더 창의적인 일에 집중</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 22: CASE 4 MULTI-AGENT ===== -->
+    <div class="slide" data-notes="네 번째 사례는 살짝 미래적인 이야기예요. 여러 에이전트가 팀처럼 협업하는 '멀티 에이전트'입니다. 한 명이 다 하는 게 아니라, 기획하는 에이전트, 조사하는 에이전트, 검수하는 에이전트가 역할을 나눠 협업해요. 사람 회사 조직과 비슷하죠. 복잡한 일을 나눠 맡으면 더 잘, 더 빠르게 해낼 수 있습니다. 아직 발전 중인 분야지만, 앞으로 크게 주목받을 방향이에요. [약 1분]">
+      <h2 class="a lg text-center">&#129309; 사례 ④ 여러 에이전트의 협업</h2>
+      <p class="a sm text-center text-secondary mb-1">역할을 나눠 팀처럼 일하는 멀티 에이전트</p>
+      <div class="a flow-container">
+        <div class="flow-step">
+          <div class="step-circle">&#128221;</div>
+          <div class="step-num">Agent A</div>
+          <div class="step-title">기획</div>
+          <div class="step-desc">무엇을 할지 설계</div>
+        </div>
+        <span class="flow-arrow">&#10132;</span>
+        <div class="flow-step">
+          <div class="step-circle">&#128269;</div>
+          <div class="step-num">Agent B</div>
+          <div class="step-title">조사</div>
+          <div class="step-desc">자료를 모은다</div>
+        </div>
+        <span class="flow-arrow">&#10132;</span>
+        <div class="flow-step">
+          <div class="step-circle">&#9989;</div>
+          <div class="step-num">Agent C</div>
+          <div class="step-title">검수</div>
+          <div class="step-desc">결과를 점검</div>
+        </div>
+      </div>
+      <p class="a flow-note">사람 조직처럼 <b>나눠 맡으면</b> 더 잘, 더 빠르게</p>
+    </div>
+
+    <!-- ===== SLIDE 23: SECTION 05 ===== -->
+    <div class="slide section-slide" data-notes="마지막 파트입니다. 지금까지 개념과 사례를 봤으니, 이제 에이전트가 코드로는 어떻게 생겼는지 아주 살짝만 들여다볼게요. 겁먹지 마세요 — 코드를 외울 필요는 전혀 없습니다. '아, 이런 모양이구나' 느낌만 가져가시면 됩니다. [전환]">
+      <span class="a section-emoji">&#128064;</span>
+      <div class="a section-num">Part 05</div>
+      <h2 class="a section-title">직접 보기</h2>
+      <p class="a section-desc">아주 간단한 데모 &mdash; 겁먹지 마세요!</p>
+    </div>
+
+    <!-- ===== SLIDE 24: CODE ===== -->
+    <div class="slide" data-notes="자, 에이전트를 아주 단순하게 코드로 표현하면 이런 모습이에요. 외우실 필요 없고, 구조만 봐주세요. 핵심은 가운데 'while', 즉 반복문입니다. 끝날 때까지 계속 돌면서, 1번 생각하고, 도구가 필요하면 2번 도구를 실행하고, 3번 결과를 기억하고, 충분해지면 4번 답을 만들고 멈춥니다. 앞에서 본 '생각-행동-관찰' 고리가 그대로 코드가 된 거예요. 보세요, 정말 이게 전부입니다. [약 1분 20초]">
+      <h2 class="a lg text-center">&#128187; 에이전트는 이런 모습</h2>
+      <p class="a sm text-center text-secondary mb-1">외울 필요 없어요 &mdash; &lsquo;반복 고리&rsquo; 구조만 봐주세요</p>
+      <div class="a code-wrapper">
+        <div class="code-header">
+          <span class="code-dot red"></span>
+          <span class="code-dot yellow"></span>
+          <span class="code-dot green"></span>
+          <span class="code-filename">simple_agent.py</span>
+        </div>
+        <pre><code class="language-python"># 아주 단순하게 표현한 AI 에이전트
+목표 = "내일 서울 날씨 알려줘"
+기억 = []
+끝남 = False
+
+while not 끝남:
+    생각 = LLM.판단(목표, 기억)        # 1) 무엇을 할지 생각
+    if 생각.도구가_필요하면:
+        결과 = 도구_실행(생각.도구)     # 2) 도구 사용 (검색·계산 등)
+        기억.append(결과)             # 3) 결과를 관찰하고 기억
+    else:
+        답변 = 생각.최종_답변          # 4) 충분하면 답을 만든다
+        끝남 = True
+
+print(답변)</code></pre>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 25: WEATHER AGENT PROMPT ===== -->
+    <div class="slide" data-notes="방금 본 코드, 직접 짜야 하나 걱정되시죠? 전혀 아닙니다! 요즘은 코딩 에이전트한테 '이런 걸 만들어 줘'라고 말로 부탁하면 돼요. 이게 바로 '날씨 에이전트'를 만드는 프롬프트입니다. 색깔 라벨을 보세요 — 목표, 도구, 행동, 출력. 어디서 많이 봤죠? 네, 오늘 배운 부품 그대로예요! 여러분이 할 일은 '무엇을, 어떤 도구로, 어떻게, 어떤 형태로'를 알려주는 것뿐. 나머지 코드는 에이전트가 알아서 짜줍니다. [청중에게] 한번 이 프롬프트를 그대로 Claude Code에 넣어보면 정말 동작해요. [약 1분 20초]">
+      <h2 class="a lg text-center mb-1">&#128221; 날씨 에이전트 만들기 &mdash; 프롬프트</h2>
+      <p class="a sm text-center text-secondary mb-2">코딩 에이전트(예: Claude Code)에게 이렇게 부탁하면 됩니다</p>
+      <div class="a prompt-card">
+        <div class="prompt-head"><span class="prompt-emoji">&#129302;</span> weather_agent_prompt</div>
+        <div class="prompt-body">
+          <p class="p-line"><span class="p-tag coral">목표</span> <span>&ldquo;날씨 에이전트&rdquo;를 만들어 줘. 사용자가 <b>도시 이름</b>을 말하면 그 도시의 <b>내일 날씨</b>를 알려주는 프로그램이야.</span></p>
+          <p class="p-line"><span class="p-tag sky">도구</span> <span>인터넷 <b>날씨 검색 API</b>를 사용해서 (도시 이름 &rarr; 기온&middot;강수 정보)를 가져와.</span></p>
+          <p class="p-line"><span class="p-tag mint">행동</span> <span>&#9312; 질문에서 도시 이름 찾기 &rarr; &#9313; 날씨 도구 호출 &rarr; &#9314; 결과를 한 문장으로 정리 &rarr; &#9315; 우산이 필요하면 한마디 덧붙이기</span></p>
+          <p class="p-line"><span class="p-tag lav">출력 예시</span> <span>&ldquo;내일 서울은 12&deg;C에 비가 와요. 우산 챙기세요! &#9730;&#65039;&rdquo;</span></p>
+        </div>
+      </div>
+      <p class="a flow-note">색깔 라벨이 곧 오늘 배운 부품 &mdash; <b>목표&middot;도구&middot;행동&middot;출력</b> 그대로죠!</p>
+    </div>
+
+    <!-- ===== SLIDE 26: DEMO FLOW ===== -->
+    <div class="slide" data-notes="그 코드가 실제로 돌면 이런 대화처럼 흘러갑니다. 사용자가 '이번 주 잘 나가는 노트북 3개 추천해 줘'라고 해요. 에이전트는 속으로 '최신 정보가 필요하니 웹 검색을 쓰자'고 생각합니다. 그리고 검색 도구를 실행해 결과를 모으고, 그걸 비교·정리한 뒤, 마지막으로 '추천 3가지와 이유를 정리했어요'라고 답하죠. 우리가 앞에서 본 모든 부품과 고리가 여기서 한꺼번에 작동합니다. [약 1분 20초]">
+      <h2 class="a lg text-center mb-1">&#128172; 데모 흐름 한눈에 보기</h2>
+      <div class="a bubble-flow">
+        <div class="bubble">
+          <span class="b-emoji">&#128100;</span>
+          <div><div class="b-role">사용자</div><div class="b-text">&ldquo;이번 주 잘 나가는 노트북 3개 추천해 줘&rdquo;</div></div>
+        </div>
+        <div class="bubble think">
+          <span class="b-emoji">&#128173;</span>
+          <div><div class="b-role">에이전트 · 생각</div><div class="b-text">&ldquo;최신 정보가 필요하니 웹 검색을 쓰자&rdquo;</div></div>
+        </div>
+        <div class="bubble tool">
+          <span class="b-emoji">&#128296;</span>
+          <div><div class="b-role">도구 · 행동</div><div class="b-text">웹 검색 실행 &rarr; 인기 모델·후기 수집</div></div>
+        </div>
+        <div class="bubble think">
+          <span class="b-emoji">&#129518;</span>
+          <div><div class="b-role">에이전트 · 종합</div><div class="b-text">모은 결과를 비교하고 정리</div></div>
+        </div>
+        <div class="bubble answer">
+          <span class="b-emoji">&#128172;</span>
+          <div><div class="b-role">응답</div><div class="b-text">&ldquo;추천 3가지와 그 이유를 정리했어요&rdquo;</div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 27: LIMITATIONS ===== -->
+    <div class="slide" data-notes="좋은 것만 이야기하면 안 되겠죠. 한계와 주의점도 꼭 알아야 합니다. 첫째, 환각 — AI가 그럴듯하지만 틀린 정보를 자신 있게 말할 때가 있어요. 둘째, 비용과 속도 — 여러 단계를 거치니 시간이 걸리고 비용도 듭니다. 셋째, 신뢰성 — 매번 똑같이 잘하지는 않아요. 넷째, 보안과 안전 — 도구로 실제 행동을 하니, 잘못하면 진짜 피해가 생길 수 있죠. 그래서 결론은 하나입니다. '최종 감독은 사람의 몫'이에요. 에이전트는 강력한 조수일 뿐, 책임자는 우리입니다. [약 1분 20초]">
+      <h2 class="a lg text-center mb-1">&#9888;&#65039; 한계와 주의점</h2>
+      <div class="a content-body" style="max-width:760px;">
+        <ul>
+          <li class="a"><b>환각</b> &mdash; 그럴듯하지만 틀린 정보를 말할 수 있다</li>
+          <li class="a"><b>비용·속도</b> &mdash; 여러 단계를 거쳐 느리고 비용이 든다</li>
+          <li class="a"><b>신뢰성</b> &mdash; 매번 똑같이 잘하지는 않는다</li>
+          <li class="a"><b>보안·안전</b> &mdash; 실제 행동을 하므로 실수가 피해로</li>
+        </ul>
+      </div>
+      <div class="a callout warn" style="margin-top:20px;">
+        <p class="callout-lead">&#129489; 최종 감독은 <span class="hl yellow">사람의 몫</span>입니다.</p>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 28: SUMMARY ===== -->
+    <div class="slide" data-notes="오늘 내용을 딱 세 가지로 정리할게요. 첫째, AI 에이전트는 '스스로 행동하는 AI'다 — 챗봇처럼 대답만 하는 게 아니라 일을 해낸다. 둘째, 두뇌·도구·메모리·계획, 이 네 부품으로 이뤄진다. 셋째, 생각-행동-관찰을 반복하며 목표에 다가간다. 이 세 문장만 기억하셔도 오늘 강의는 완벽하게 소화하신 거예요. [약 1분]">
+      <h2 class="a lg text-center mb-2">&#11088; 핵심 3가지 요약</h2>
+      <div class="a content-body" style="max-width:760px;">
+        <ul>
+          <li class="a"><b>스스로 행동하는 AI</b> &mdash; 대답이 아니라 일을 &lsquo;해낸다&rsquo;</li>
+          <li class="a"><b>네 가지 부품</b> &mdash; 두뇌(LLM) · 도구 · 메모리 · 계획</li>
+          <li class="a"><b>생각 → 행동 → 관찰</b>을 반복하며 목표에 다가간다</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- ===== SLIDE 29: CLOSING ===== -->
+    <div class="slide closing-slide" data-notes="여기까지 오느라 수고 많으셨습니다! [밝게] 오늘은 AI 에이전트가 무엇인지, 어떤 부품으로 어떻게 동작하는지, 그리고 어디에 쓰이는지를 살펴봤어요. 다음 시간엔 한 걸음 더 나아가서, 말로 설명만 하면 코드가 만들어지는 '바이브 코딩'을 직접 체험해 볼 거예요. 오늘 본 날씨 에이전트 프롬프트, 기억나시죠? 그걸 진짜로 돌려봅니다. 기대해 주세요. 궁금한 점 있으면 지금 편하게 질문해 주세요. 감사합니다! [Q&A · 약 2~3분]">
+      <span class="a closing-emoji">&#127881;</span>
+      <h1 class="a closing-title">감사합니다!</h1>
+      <p class="a closing-sub">다음 시간엔 &lsquo;바이브 코딩&rsquo;으로 만나요</p>
+      <div class="a closing-links">
+        <span class="closing-link-btn coral">&#10067; 질문 환영</span>
+        <span class="closing-link-btn sky">&#128640; 다음: 실습 편</span>
+        <span class="closing-link-btn lavender">&#128172; Q &amp; A</span>
+      </div>
+    </div>
+
+  </div>
+  <!-- END DECK -->
+
+  <!-- Prism.js (code highlighting) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-python.min.js"></script>
+
+  <script>
+    (function () {
+      'use strict';
+
+      /* ========================================
+         STATE
+      ======================================== */
+      var deck = document.getElementById('deck');
+      var slides = Array.from(deck.querySelectorAll('.slide'));
+      var total = slides.length;
+      var current = 0;
+
+      var progressBar = document.getElementById('progress');
+      var counter = document.getElementById('counter');
+
+      /* Speaker notes popup window (per make-slide spec) */
+      var notesWindow = null;
+
+      /* ========================================
+         HASH NAVIGATION
+      ======================================== */
+      function readHash() {
+        var hash = window.location.hash;
+        if (hash && /^#\d+$/.test(hash)) {
+          var idx = parseInt(hash.substring(1), 10) - 1;
+          if (idx >= 0 && idx < total) {
+            slides[current].classList.remove('active');
+            current = idx;
+            slides[current].classList.add('active');
+          }
+        }
+      }
+
+      function writeHash() {
+        history.replaceState(null, '', '#' + (current + 1));
+      }
+
+      /* ========================================
+         HELPERS
+      ======================================== */
+      function slideTitle(s) {
+        var h = s.querySelector('h1, h2, .section-title, .closing-title');
+        return h ? h.textContent.trim() : '(제목 없음)';
+      }
+
+      /* ========================================
+         UI UPDATES
+      ======================================== */
+      function updateUI() {
+        var pct = ((current + 1) / total) * 100;
+        progressBar.style.width = pct + '%';
+        counter.textContent = (current + 1) + ' / ' + total;
+        writeHash();
+        updateNotes();
+      }
+
+      /* ========================================
+         NAVIGATION
+      ======================================== */
+      function goTo(index) {
+        if (index < 0 || index >= total || index === current) return;
+        slides[current].classList.remove('active');
+        current = index;
+        slides[current].classList.add('active');
+        updateUI();
+      }
+      function next() { goTo(current + 1); }
+      function prev() { goTo(current - 1); }
+
+      /* ========================================
+         KEYBOARD
+      ======================================== */
+      document.addEventListener('keydown', function (e) {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+        switch (e.key) {
+          case 'ArrowRight':
+          case 'ArrowDown':
+            e.preventDefault(); next(); break;
+          case 'ArrowLeft':
+          case 'ArrowUp':
+            e.preventDefault(); prev(); break;
+          case ' ':
+            e.preventDefault();
+            if (e.shiftKey) { prev(); } else { next(); }
+            break;
+          case 'Home':
+            e.preventDefault(); goTo(0); break;
+          case 'End':
+            e.preventDefault(); goTo(total - 1); break;
+          case 'f':
+          case 'F':
+            e.preventDefault(); toggleFullscreen(); break;
+          case 's':
+          case 'S':
+            e.preventDefault(); toggleNotes(); break;
+        }
+      });
+
+      /* ========================================
+         CLICK NAVIGATION (left 1/3 = prev, right 2/3 = next)
+      ======================================== */
+      deck.addEventListener('click', function (e) {
+        if (e.target.closest('a, button, code, pre, .fun-card, .analogy-card, .flow-step, .bubble')) return;
+        var rect = deck.getBoundingClientRect();
+        var x = e.clientX - rect.left;
+        if (x < rect.width / 3) { prev(); } else { next(); }
+      });
+
+      /* ========================================
+         TOUCH / SWIPE
+      ======================================== */
+      var touchStartX = 0, touchStartY = 0, touchStartTime = 0;
+      deck.addEventListener('touchstart', function (e) {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+        touchStartTime = Date.now();
+      }, { passive: true });
+      deck.addEventListener('touchend', function (e) {
+        var dx = e.changedTouches[0].clientX - touchStartX;
+        var dy = e.changedTouches[0].clientY - touchStartY;
+        var dt = Date.now() - touchStartTime;
+        if (dt > 500) return;
+        if (Math.abs(dx) < 50) return;
+        if (Math.abs(dy) > Math.abs(dx)) return;
+        if (dx < 0) { next(); } else { prev(); }
+      }, { passive: true });
+
+      /* ========================================
+         FULLSCREEN
+      ======================================== */
+      window.toggleFullscreen = function () {
+        if (!document.fullscreenElement) {
+          document.documentElement.requestFullscreen().catch(function () {});
+        } else {
+          document.exitFullscreen().catch(function () {});
+        }
+      };
+
+      /* ========================================
+         SPEAKER NOTES — POPUP WINDOW
+      ======================================== */
+      function toggleNotes() {
+        if (notesWindow && !notesWindow.closed) {
+          notesWindow.close();
+          notesWindow = null;
+          return;
+        }
+        notesWindow = window.open('', 'SpeakerNotes', 'width=540,height=480,top=80,left=80');
+        if (!notesWindow) { return; } /* popup blocked */
+        notesWindow.document.write(
+          '<!DOCTYPE html><html lang="ko"><head><meta charset="UTF-8"><title>발표자 노트</title><style>' +
+          '*{margin:0;padding:0;box-sizing:border-box;}' +
+          'body{font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;background:#1f1b18;color:#f0e8e0;padding:26px;}' +
+          '.sn{font-size:12px;color:#ff9b9b;font-family:monospace;letter-spacing:1px;margin-bottom:14px;}' +
+          '.label{font-size:11px;letter-spacing:2px;text-transform:uppercase;color:#8a807a;margin-bottom:10px;}' +
+          '.notes{font-size:17px;line-height:1.85;color:#f0e8e0;white-space:pre-wrap;}' +
+          '.next{margin-top:22px;padding-top:16px;border-top:1px solid #3a322d;font-size:14px;color:#b8aaa0;}' +
+          '.next b{color:#ffd43b;font-weight:600;}' +
+          '</style></head><body>' +
+          '<div class="sn" id="sn"></div>' +
+          '<div class="label">Speaker Notes</div>' +
+          '<div class="notes" id="nt"></div>' +
+          '<div class="next">다음 &#9654; <b id="np"></b></div>' +
+          '</body></html>'
+        );
+        notesWindow.document.close();
+        updateNotes();
+      }
+      window.toggleNotes = toggleNotes;
+
+      function updateNotes() {
+        if (!notesWindow || notesWindow.closed) return;
+        try {
+          var note = slides[current].getAttribute('data-notes') || '(이 슬라이드에는 노트가 없습니다)';
+          var nextPreview = (current + 1 < total) ? slideTitle(slides[current + 1]) : '— 마지막 슬라이드 —';
+          notesWindow.document.getElementById('sn').textContent = 'Slide ' + (current + 1) + ' / ' + total;
+          notesWindow.document.getElementById('nt').textContent = note;
+          notesWindow.document.getElementById('np').textContent = nextPreview;
+        } catch (e) {}
+      }
+
+      /* ========================================
+         HASH CHANGE LISTENER
+      ======================================== */
+      window.addEventListener('hashchange', function () {
+        readHash();
+        updateUI();
+      });
+
+      /* ========================================
+         INIT
+      ======================================== */
+      readHash();
+      updateUI();
+
+      if (typeof Prism !== 'undefined') { Prism.highlightAll(); }
+    })();
+  </script>
+</body>
+</html>
