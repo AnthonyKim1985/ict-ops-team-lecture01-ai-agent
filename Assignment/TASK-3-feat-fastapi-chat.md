@@ -1,6 +1,6 @@
 # TASK-3: FastAPI `/chat` 엔드포인트 — `main.py`
 
-> **시작 브랜치:** `feat/fastapi-chat` (TASK-2 머지 후 `git switch -c feat/fastapi-chat`)
+> **시작 브랜치:** `feat/fastapi-chat` (TASK-2 머지 후 `git switch main && git pull && git switch -c feat/fastapi-chat`)
 > **이 문서만 보고 개발할 수 있도록 구성됨.** 외부 참조는 맨 아래 "참조" 절에만.
 
 ## 선행 작업 (TASK-0 · TASK-2 산출물 — 이미 존재해야 함)

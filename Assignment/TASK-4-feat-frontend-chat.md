@@ -1,6 +1,6 @@
 # TASK-4: 프론트엔드 채팅 UI — `index.html` / `app.js` / `styles.css`
 
-> **시작 브랜치:** `feat/frontend-chat` (TASK-3 머지 후 `git switch -c feat/frontend-chat`)
+> **시작 브랜치:** `feat/frontend-chat` (TASK-3 머지 후 `git switch main && git pull && git switch -c feat/frontend-chat`)
 > **이 문서만 보고 개발할 수 있도록 구성됨.** 외부 참조는 맨 아래 "참조" 절에만.
 
 ## 선행 작업 (TASK-0 · TASK-3 산출물 — 이미 존재해야 함)

@@ -1,6 +1,6 @@
 # TASK-0: 프로젝트 스캐폴딩
 
-> **시작 브랜치:** `chore/scaffolding` (예: `git switch -c chore/scaffolding`)
+> **시작 브랜치:** `chore/scaffolding` (예: `git switch main && git pull && git switch -c chore/scaffolding`)
 > **이 문서만 보고 개발할 수 있도록 구성됨.** 외부 문서 참조는 맨 아래 "참조" 절에만 표시.
 
 ## 목표
