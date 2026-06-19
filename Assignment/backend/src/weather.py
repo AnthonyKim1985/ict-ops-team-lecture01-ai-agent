@@ -6,6 +6,31 @@ from src.config import settings
 GEOCODING_URL = "https://geocoding-api.open-meteo.com/v1/search"
 FORECAST_URL = "https://api.open-meteo.com/v1/forecast"
 
+# Open-Meteo 지오코딩은 한글 도시명을 누락/오매칭한다(예: '서울'→0개, '부산'→대도시 누락).
+# 주요 한국 도시는 영문명으로 정규화해 조회한다. LLM이 한글을 넘겨도 결정론적으로 동작.
+_CITY_ALIASES = {
+    "서울": "Seoul",
+    "부산": "Busan",
+    "인천": "Incheon",
+    "대구": "Daegu",
+    "대전": "Daejeon",
+    "광주": "Gwangju",
+    "울산": "Ulsan",
+    "세종": "Sejong",
+    "수원": "Suwon",
+    "성남": "Seongnam",
+    "용인": "Yongin",
+    "고양": "Goyang",
+    "창원": "Changwon",
+    "청주": "Cheongju",
+    "전주": "Jeonju",
+    "천안": "Cheonan",
+    "제주": "Jeju",
+    "춘천": "Chuncheon",
+    "강릉": "Gangneung",
+    "포항": "Pohang",
+}
+
 _WMO_DESC = {
     0: "맑음",
     1: "대체로 맑음",
@@ -42,10 +67,11 @@ async def get_weather(city: str) -> dict:
     """주어진 도시의 '내일' 날씨(기온, 강수량, 강수확률, 날씨 상태)를 조회한다.
     사용자가 특정 도시의 날씨를 물을 때 호출한다."""
     try:
+        query = _CITY_ALIASES.get(city.strip(), city.strip())
         async with httpx.AsyncClient(timeout=settings.request_timeout_seconds) as client:
             geo_resp = await client.get(
                 GEOCODING_URL,
-                params={"name": city, "count": 1, "language": "ko", "format": "json"},
+                params={"name": query, "count": 10, "language": "ko", "format": "json"},
             )
             geo_resp.raise_for_status()
 
@@ -53,7 +79,9 @@ async def get_weather(city: str) -> dict:
             if not results:
                 return {"error": f"도시 '{city}'을(를) 찾을 수 없어요."}
 
-            place = results[0]
+            # Open-Meteo는 인구순 정렬이 아니라 동명의 소도시가 1위로 올 수 있다
+            # (예: 'Jeju' 에티오피아). 가장 인구가 많은 주요 도시를 고른다.
+            place = max(results, key=lambda r: r.get("population") or 0)
             forecast_resp = await client.get(
                 FORECAST_URL,
                 params={
