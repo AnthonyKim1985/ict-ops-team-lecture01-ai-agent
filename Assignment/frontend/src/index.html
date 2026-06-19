@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>날씨 AI Agent</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <main class="chat">
+      <header class="chat-header">날씨 비서</header>
+      <div id="messages" class="messages"></div>
+      <form id="chat-form" class="input-bar">
+        <input
+          id="chat-input"
+          type="text"
+          placeholder="예: 내일 서울 날씨 어때?"
+          autocomplete="off"
+        />
+        <button type="submit">전송</button>
+      </form>
+    </main>
+    <script type="module">
+      import { initChat } from "./app.js";
+
+      initChat();
+    </script>
+  </body>
+</html>
