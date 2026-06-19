@@ -39,7 +39,8 @@ def _describe(code: int, precipitation_mm: float) -> str:
 
 @tool
 async def get_weather(city: str) -> dict:
-    """주어진 도시의 내일 날씨 데이터를 조회한다."""
+    """주어진 도시의 '내일' 날씨(기온, 강수량, 강수확률, 날씨 상태)를 조회한다.
+    사용자가 특정 도시의 날씨를 물을 때 호출한다."""
     try:
         async with httpx.AsyncClient(timeout=settings.request_timeout_seconds) as client:
             geo_resp = await client.get(
