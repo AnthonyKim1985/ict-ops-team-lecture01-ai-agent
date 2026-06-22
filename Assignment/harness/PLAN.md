@@ -72,7 +72,7 @@
 ## 4. 디렉터리 구조
 
 ```
-Assignment/
+Assignment/harness/
 ├── ASSIGNMENT.md
 ├── PLAN.md                  ← 본 문서
 ├── backend/

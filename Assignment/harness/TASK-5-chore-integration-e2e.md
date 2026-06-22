@@ -19,7 +19,7 @@
 ```
 backend/README.md     ← 신규
 frontend/README.md    ← 신규
-Assignment/README.md  ← 신규 (전체 실행 가이드)
+Assignment/harness/README.md  ← 신규 (전체 실행 가이드)
 ```
 
 ---
@@ -29,7 +29,7 @@ Assignment/README.md  ← 신규 (전체 실행 가이드)
 ### Step A1: 백엔드 전체 테스트
 
 ```bash
-cd /Users/anthonykim/Workspace/SlideWorkspace/lecture01_ai_agent/Assignment/backend
+cd /Users/anthonykim/Workspace/SlideWorkspace/lecture01_ai_agent/Assignment/harness/backend
 pytest -v
 ```
 기대: TASK-0(2) + TASK-1(3) + TASK-2(5) + TASK-3(4) = **14 passed** (정확한 개수는 구현에 따라 ±, 모두 통과해야 함).
@@ -83,7 +83,7 @@ curl -s -X POST http://localhost:8000/chat \
 ### Step B2: 브라우저 E2E
 
 ```bash
-cd Assignment/frontend/src && python -m http.server 5500
+cd Assignment/harness/frontend/src && python -m http.server 5500
 ```
 - 브라우저에서 `http://localhost:5500` 접속.
 - "내일 서울 날씨 어때?" 입력 → "생각 중..." 표시 후 봇 말풍선에 한 문장 응답.
@@ -151,7 +151,7 @@ npx vitest run
 ```
 ````
 
-### Step C3: `Assignment/README.md`
+### Step C3: `Assignment/harness/README.md`
 
 ````markdown
 # 날씨 AI Agent
@@ -189,7 +189,7 @@ cd frontend && npx vitest run # 프론트
 ### Step C4: 커밋
 
 ```bash
-cd /Users/anthonykim/Workspace/SlideWorkspace/lecture01_ai_agent/Assignment
+cd /Users/anthonykim/Workspace/SlideWorkspace/lecture01_ai_agent/Assignment/harness
 git add backend/README.md frontend/README.md README.md
 git commit -m "docs: 실행/테스트 가이드 README 추가 (백엔드/프론트/전체)"
 ```

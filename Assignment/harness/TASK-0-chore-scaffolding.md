@@ -17,7 +17,7 @@
 ## 만들 디렉터리/파일 (정확한 경로)
 
 ```
-Assignment/
+Assignment/harness/
 ├── .gitignore                          ← 신규
 ├── backend/
 │   ├── pyproject.toml                  ← 신규 (의존성 + pytest 설정)
@@ -46,12 +46,12 @@ Assignment/
 ### Step 1: 디렉터리 생성
 
 ```bash
-cd /Users/anthonykim/Workspace/SlideWorkspace/lecture01_ai_agent/Assignment
+cd /Users/anthonykim/Workspace/SlideWorkspace/lecture01_ai_agent/Assignment/harness
 mkdir -p backend/src backend/test frontend/src frontend/test
 touch backend/src/__init__.py frontend/src/.gitkeep
 ```
 
-### Step 2: `Assignment/.gitignore` 작성
+### Step 2: `Assignment/harness/.gitignore` 작성
 
 > `.env`는 이미 git 루트(`lecture01_ai_agent/.gitignore`)에서 무시되고 있다. 여기서는 Python/Node 빌드 산출물만 무시한다.
 
@@ -126,7 +126,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# config.py 위치: Assignment/backend/src/config.py
+# config.py 위치: Assignment/harness/backend/src/config.py
 #   parents[0]=src, [1]=backend, [2]=Assignment, [3]=lecture01_ai_agent (.env 위치)
 ENV_PATH = Path(__file__).resolve().parents[3] / ".env"
 load_dotenv(ENV_PATH)
@@ -205,7 +205,7 @@ async def test_health_endpoint():
 ### Step 8: 백엔드 설치 및 검증
 
 ```bash
-cd /Users/anthonykim/Workspace/SlideWorkspace/lecture01_ai_agent/Assignment/backend
+cd /Users/anthonykim/Workspace/SlideWorkspace/lecture01_ai_agent/Assignment/harness/backend
 python -m venv .venv && source .venv/bin/activate   # 권장(가상환경)
 pip install -e ".[test]"
 python -c "import src.config; print('config OK')"   # 기대: config OK
@@ -263,7 +263,7 @@ describe("toolchain smoke", () => {
 ### Step 12: 프론트엔드 설치 및 검증
 
 ```bash
-cd /Users/anthonykim/Workspace/SlideWorkspace/lecture01_ai_agent/Assignment/frontend
+cd /Users/anthonykim/Workspace/SlideWorkspace/lecture01_ai_agent/Assignment/harness/frontend
 npm install -D vitest jsdom    # 최신 안정 버전 설치 + package.json에 기록
 npx vitest run                 # 기대: 2 passed (smoke)
 ```
@@ -271,7 +271,7 @@ npx vitest run                 # 기대: 2 passed (smoke)
 ### Step 13: 커밋
 
 ```bash
-cd /Users/anthonykim/Workspace/SlideWorkspace/lecture01_ai_agent/Assignment
+cd /Users/anthonykim/Workspace/SlideWorkspace/lecture01_ai_agent/Assignment/harness
 git add .gitignore backend frontend
 git commit -m "chore: 프로젝트 스캐폴딩 (백엔드/프론트엔드 골격, config env 브릿지, 테스트 부트스트랩)"
 ```
